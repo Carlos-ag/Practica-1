@@ -1,2 +1,2 @@
-CLIENT,localhost,6977
-SERVER,localhost,6977
+CLIENT,localhost,6981
+SERVER,localhost,6981

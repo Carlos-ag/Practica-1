@@ -1,4 +1,4 @@
-def enter_valid_input(list,sock,connection):
+def enter_valid_input(list,connection):
     user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
     number = connection.recv(1024).decode()
 

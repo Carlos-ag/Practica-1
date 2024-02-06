@@ -24,26 +24,11 @@ def read_ip_port():
     return (ip_servidor, int(puerto_servidor))
 
 
-
-
-def close_connection(sock,connection):
-    connection.close()
-    sock.close()
-    exit()
-
-def main():
+def init_tcp_socket():
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = read_ip_port()
     sock.bind(server_address)
     sock.listen(1)
     connection, client_address = sock.accept()
-    data = ""
-        
-    user = handle_authentification(sock,connection)
-
-    close_connection(sock,connection)
-    
-
-if __name__ == "__main__":
-    main()
+    return connection, client_address

@@ -21,10 +21,11 @@ def send_data(data, connection):
 
 user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
 
-def handle_authentification(sock,connection):
+def handle_authentification(connection):
     user_logged = False
     send_data("Welcome to the game" + "\n\n", connection)
-    while not user_logged:
+    error = False
+    while not user_logged and not error:
         send_data(
         """Please, log in or sign up to play
         1. Log in
@@ -33,13 +34,19 @@ def handle_authentification(sock,connection):
         4. Exit\n\n""", connection)
 
         print("Le pido al cliente que ingrese un numero")
-        option = enter_valid_input([1, 2, 3, 4],sock,connection)
+        option = enter_valid_input([1, 2, 3, 4],connection)
 
         # recibir OK
         data = connection.recv(1024).decode()
         if data != "OK":
             print("ERROR")
-            exit()
+            error = True
+
+        
+        if option == 4:
+            connection.sendall("EXIT".encode())
+            
+        
 
         if option in [1, 2, 3]:
             connection.sendall("Enter your username: ".encode())
@@ -47,7 +54,8 @@ def handle_authentification(sock,connection):
             connection.sendall("Enter your password: ".encode())
             password = connection.recv(1024) .decode()
         
-        print("hemos llegado hasta aqui")
+    
+
 
         if option == 1:
             print("option 1")
@@ -68,18 +76,13 @@ def handle_authentification(sock,connection):
             else:
                 connection.sendall("User already exists, please log in\n".encode())
         elif option == 3:
-
             # delete user
             if delete_user(user, password):
-                connection.sendall("User deleted\n".encode())
-                user_logged = True
+                connection.sendall("USER DELETED".encode())
             else:
                 connection.sendall("User does not exist\n".encode())   
 
-        elif option == 4:
-            connection.sendall("Goodbye!\n".encode())
-            exit()
-        
+       
             
 
 

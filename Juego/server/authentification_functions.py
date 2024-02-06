@@ -1,7 +1,7 @@
 # library to hash the password
 import hashlib
 
-USERS_FILE = "Entregable/users.txt"
+USERS_FILE = "Juego/commons/users.txt"
 
 # the file is structured as:
 # username, password_hash, max_score
@@ -9,16 +9,13 @@ USERS_FILE = "Entregable/users.txt"
 def encode_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def login_user(user, password):
-    password = encode_password(password)
+def login_user(user, encoded_password):
+    encoded_password = encode_password(encoded_password)
     with open(USERS_FILE, "r") as file:
-        print(file.readlines())
         for line in file:
-            print("linea", line)
             username, password_hash, max_score = line.strip().split(",")
-            if username == user and password_hash == password:
+            if username == user and password_hash == encoded_password:
                 return True
-        print("he salido del for")
         return False
 
 def register_user(user, password):

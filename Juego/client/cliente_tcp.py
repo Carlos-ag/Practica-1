@@ -76,23 +76,26 @@ def authenticate_user(sock):
         sock.sendall("OK".encode())
     else:
         print("ERROR")
-        sock.close()
-        exit()
+        return False, True
 
     if option_selected in ["LOGIN", "REGISTER", "DELETE"]:
         handle_login_register_delete(sock)
     else : #EXIT
-        print(data)
-        sock.close()
-        exit()
+        return False, True
+        
+        
     
     # Mensaje de autenticación
     data = sock.recv(1024).decode()
     print(data)
     if data == "SUCCESSFUL AUTHENTICATION":
-        return True
+        return True, False
+    elif data == "USER DELETED":
+        print("\nUser deleted\n\n")
+        return False, False
     else:
-        return False
+        print(data)
+        return False, True
     
 
 
