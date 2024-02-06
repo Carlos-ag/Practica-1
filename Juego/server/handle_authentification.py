@@ -19,6 +19,8 @@ def handle_authentification(sock,connection):
 
         option = enter_valid_input([1, 2, 3, 4],sock,connection)
 
+        connection.sendall("OK".encode())
+
         # SEND 
         connection.sendall(user_state[option-1].encode())
         
