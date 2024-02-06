@@ -6,8 +6,8 @@ from valid_input import enter_valid_input
 def handle_authentification(sock,connection):
     user_logged = False
     while not user_logged:
-        connection.sendall("""Welcome to the game
-        Please, log in or sign up to play
+        connection.sendall("Welcome to the game".encode())
+        connection.sendall("""Please, log in or sign up to play
         1. Log in
         2. Sign up
         3. Delete user
