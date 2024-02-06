@@ -16,7 +16,6 @@ def read_delimiter():
 delimiter = read_delimiter()
 
 def send_data(data, connection):
-    data = data + delimiter
     connection.sendall(data.encode())
 
 
@@ -24,8 +23,8 @@ user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
 
 def handle_authentification(sock,connection):
     user_logged = False
+    send_data("Welcome to the game" + "\n\n", connection)
     while not user_logged:
-        send_data("Welcome to the game" + "\n\n", connection)
         send_data(
         """Please, log in or sign up to play
         1. Log in
@@ -33,36 +32,38 @@ def handle_authentification(sock,connection):
         3. Delete user
         4. Exit\n\n""", connection)
 
-        
+        print("Le pido al cliente que ingrese un numero")
         option = enter_valid_input([1, 2, 3, 4],sock,connection)
-        
 
-        # SEND 
-        connection.sendall(user_state[option-1].encode())
-        
+        # recibir OK
+        data = connection.recv(1024).decode()
+        if data != "OK":
+            print("ERROR")
+            exit()
+
         if option in [1, 2, 3]:
             connection.sendall("Enter your username: ".encode())
-            user = connection.recv(1024) .decode()
-            connection.sendall("OK".encode())
+            user = connection.recv(1024).decode()
             connection.sendall("Enter your password: ".encode())
             password = connection.recv(1024) .decode()
-            connection.sendall("OK".encode())
+        
+        print("hemos llegado hasta aqui")
 
         if option == 1:
-            
+            print("option 1")
+
             # log in
             if login_user(user, password):
-                connection.sendall("""Logging in...
-                Welcome """ + user + """
-                Your current score is: """ + str(get_max_score(user)) + """
-                Top 5 players:
-                """ + get_ranking_scores() + "\n".encode())
+                connection.sendall("SUCCESSFUL AUTHENTICATION".encode())
                 user_logged = True
+                print("FUNCIOOOOSOOOOOO")
+            else:
+                print("usuario no existe")
+                connection.sendall("User does not exist or password is incorrect\n".encode())
 
         elif option == 2: # sign up
             if register_user(user, password):
-                connection.sendall("""Signing up...
-                User registered\n""".encode())
+                connection.sendall("SUCCESSFUL AUTHENTICATION".encode())
                 user_logged = True
             else:
                 connection.sendall("User already exists, please log in\n".encode())

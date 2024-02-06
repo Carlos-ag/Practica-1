@@ -2,19 +2,8 @@ import socket
 import sys
 # TODO: MIRAR SI UNCOMMENTEAR ESTO
 # from ask_ip_port import ask_ip_port
-
-def read_delimiter():
-    nombre_archivo = "Juego/commons/delimiter.txt"
-    # Variables para almacenar el delimitador
-    
-
-    # Abrir el archivo para leer
-    with open(nombre_archivo, 'r') as archivo:
-        # the file contains only one line, that is the delimiter
-        return archivo.readline().strip()
-
-global delimiter
-delimiter = read_delimiter()
+global user_state
+user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
 
 def read_ip_port():
     nombre_archivo = "Juego/commons/ip_port.txt"
@@ -48,57 +37,47 @@ def close_tcp_socket(sock):
 
 
 def handle_login_register_delete(sock):
-    # Nombre de usuario
+    # username
     print(sock.recv(1024).decode())
-    send_valid_input(sock)
+    user_name = input()
+    sock.sendall(user_name.encode())
 
-    # Contraseña
+    # password
     print(sock.recv(1024).decode())
-    send_valid_input(sock)
-
-def receive_messages(sock):
-    global delimiter
-    data = ""
-    messages = []
-    print("voy a recibir")
-    while True:
-        chunk = sock.recv(4096).decode('utf-8')  # Receive data from the socket
-        print("datos recibidos")
-        print(chunk)
-
-        if not chunk:
-            break  # If no data is received, exit the loop
-        data += chunk
-        while delimiter in data:  # Check for the delimiter in the accumulated data
-            msg, delimiter, data = data.partition(delimiter)  # Split at the first occurrence of the delimiter
-            messages.append(msg)  # Add the extracted message to the list
-        return messages
-
+    password = input()
+    sock.sendall(password.encode())
+    
 
 def send_valid_input(sock):
+    global user_state
     valid_answer = False
     while not valid_answer:
         user_input = input()
         sock.sendall(user_input.encode())
-        data = receive_messages(sock)
+        data = sock.recv(1024).decode()
 
-        if data[0] == "OK":
+        if data in user_state:
             valid_answer = True
-            return data[1]
+            return data
         else:
             print(data)
 
 def authenticate_user(sock):
     # Mensaje de bienvenida y opciones
-    print("principio")
-    data = receive_messages(sock)
-    print("datos recibidos")
-    for message in data:
-        print(message)
+    data = sock.recv(1024).decode()
+    print(data)
 
-    
     # Selección de opción
+
     option_selected = send_valid_input(sock)
+
+
+    if option_selected in user_state:
+        sock.sendall("OK".encode())
+    else:
+        print("ERROR")
+        sock.close()
+        exit()
 
     if option_selected in ["LOGIN", "REGISTER", "DELETE"]:
         handle_login_register_delete(sock)
@@ -109,6 +88,7 @@ def authenticate_user(sock):
     
     # Mensaje de autenticación
     data = sock.recv(1024).decode()
+    print(data)
     if data == "SUCCESSFUL AUTHENTICATION":
         return True
     else:

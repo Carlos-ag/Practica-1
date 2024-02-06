@@ -9,8 +9,10 @@ def main():
 
     # aqui ya sabemos que el usuario esta autenticado
 
-
+    print("usuario autenticado")
     close_tcp_socket(sock)
+    print("socket cerrado")
+    
 
 
 if __name__ == "__main__":

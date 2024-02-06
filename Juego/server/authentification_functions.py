@@ -12,11 +12,14 @@ def encode_password(password):
 def login_user(user, password):
     password = encode_password(password)
     with open(USERS_FILE, "r") as file:
+        print(file.readlines())
         for line in file:
+            print("linea", line)
             username, password_hash, max_score = line.strip().split(",")
             if username == user and password_hash == password:
                 return True
-    return False
+        print("he salido del for")
+        return False
 
 def register_user(user, password):
     if login_user(user, password) == True:

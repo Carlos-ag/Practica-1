@@ -39,9 +39,8 @@ def main():
     sock.listen(1)
     connection, client_address = sock.accept()
     data = ""
-    while True:
         
-        user = handle_authentification(sock,connection)
+    user = handle_authentification(sock,connection)
 
     close_connection(sock,connection)
     
