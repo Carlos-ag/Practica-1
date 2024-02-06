@@ -3,6 +3,8 @@ import sys
 from authentification_functions import login_user, register_user, update_score, update_if_higher, get_ranking_scores, get_max_score, delete_user
 from valid_input import enter_valid_input
 
+user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
+
 def handle_authentification(sock,connection):
     user_logged = False
     while not user_logged:
@@ -16,11 +18,17 @@ def handle_authentification(sock,connection):
 
 
         option = enter_valid_input([1, 2, 3, 4],sock,connection)
-        
+
+        # SEND 
+        connection.sendall(user_state[option-1].encode())
         
         if option in [1, 2, 3]:
+            connection.sendall("Enter your username: ".encode())
             user = connection.recv(1024) .decode()
+            connection.sendall("OK".encode())
+            connection.sendall("Enter your password: ".encode())
             password = connection.recv(1024) .decode()
+            connection.sendall("OK".encode())
 
         if option == 1:
             
