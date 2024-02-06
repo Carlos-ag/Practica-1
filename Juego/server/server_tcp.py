@@ -14,7 +14,7 @@ def read_ip_port():
     with open(nombre_archivo, 'r') as archivo:
         for linea in archivo:
             # Verificar si la línea contiene la palabra 'SERVER'
-            if 'SERVER' in linea:
+            if 'CLIENT' in linea:
                 # Partir la línea por las comas y quitar espacios en blanco
                 partes = linea.split(',')
                 ip_servidor = partes[1].strip()
