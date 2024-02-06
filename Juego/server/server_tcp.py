@@ -4,9 +4,24 @@ from handle_authentification import handle_authentification
 import os
 
 def read_ip_port():
-    with open("Juego/commons/ip_port.txt", "r") as file:
-        ip_port = file.read().split(",")
-        return (ip_port[0], int(ip_port[1]))
+    nombre_archivo = "Juego/commons/ip_port.txt"
+
+    # Variables para almacenar la IP y el puerto del servidor
+    ip_servidor = ""
+    puerto_servidor = ""
+
+    # Abrir el archivo para leer
+    with open(nombre_archivo, 'r') as archivo:
+        for linea in archivo:
+            # Verificar si la línea contiene la palabra 'SERVER'
+            if 'CLIENT' in linea:
+                # Partir la línea por las comas y quitar espacios en blanco
+                partes = linea.split(',')
+                ip_servidor = partes[1].strip()
+                puerto_servidor = partes[2].strip()
+                break  # No es necesario continuar si ya encontramos el servidor
+
+    return (ip_servidor, int(puerto_servidor))
 
 def close_connection(sock,connection):
     connection.close()
