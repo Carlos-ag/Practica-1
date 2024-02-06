@@ -23,6 +23,9 @@ def read_ip_port():
 
     return (ip_servidor, int(puerto_servidor))
 
+
+
+
 def close_connection(sock,connection):
     connection.close()
     sock.close()

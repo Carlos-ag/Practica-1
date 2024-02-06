@@ -3,23 +3,39 @@ import sys
 from authentification_functions import login_user, register_user, update_score, update_if_higher, get_ranking_scores, get_max_score, delete_user
 from valid_input import enter_valid_input
 
+def read_delimiter():
+    nombre_archivo = "Juego/commons/delimiter.txt"
+    # Variables para almacenar el delimitador
+    
+
+    # Abrir el archivo para leer
+    with open(nombre_archivo, 'r') as archivo:
+        # the file contains only one line, that is the delimiter
+        return archivo.readline().strip()
+
+delimiter = read_delimiter()
+
+def send_data(data, connection):
+    data = data + delimiter
+    connection.sendall(data.encode())
+
+
 user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
 
 def handle_authentification(sock,connection):
     user_logged = False
     while not user_logged:
-        connection.sendall("Welcome to the game".encode())
-        connection.sendall("""Please, log in or sign up to play
+        send_data("Welcome to the game" + "\n\n", connection)
+        send_data(
+        """Please, log in or sign up to play
         1. Log in
         2. Sign up
         3. Delete user
-        4. Exit\n""".encode())
+        4. Exit\n\n""", connection)
 
-
-
+        
         option = enter_valid_input([1, 2, 3, 4],sock,connection)
-
-        connection.sendall("OK".encode())
+        
 
         # SEND 
         connection.sendall(user_state[option-1].encode())
