@@ -13,6 +13,8 @@ def handle_authentification(sock,connection):
         3. Delete user
         4. Exit\n""".encode())
 
+        
+
         option = enter_valid_input([1, 2, 3, 4],sock,connection)
         
         if option in [1, 2, 3]:
