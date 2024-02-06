@@ -1,1 +1,2 @@
-localhost, 6969
+CLIENTE,192.168.98.11, 6969
+SERVER, 
