@@ -23,12 +23,18 @@ def read_ip_port():
 
     return (ip_servidor, int(puerto_servidor))
 
-
 def init_tcp_socket():
-    # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = read_ip_port()
     sock.bind(server_address)
-    sock.listen(1)
-    connection, client_address = sock.accept()
-    return connection, client_address
+    sock.listen(5)  # Listen for up to 5 connections (increase if needed)
+    return sock
+
+def handle_client_connection(client_socket):
+    try:
+        user = handle_authentification(client_socket)
+        # You can add more logic here to interact with the client after authentication
+    except Exception as e:
+        print("Error during client handling: ", e)
+    finally:
+        client_socket.close()

@@ -5,6 +5,8 @@ def end_game(tcp_sock):
     close_tcp_socket(tcp_sock)
     return 0
 
+
+
 def main():
     connection, client_address = init_tcp_socket()
     try:
