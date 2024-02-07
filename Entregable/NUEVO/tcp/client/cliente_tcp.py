@@ -1,12 +1,11 @@
 import socket 
 import sys
-# TODO: MIRAR SI UNCOMMENTEAR ESTO
-# from ask_ip_port import ask_ip_port
+
 global user_state
 user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
 
 def read_ip_port():
-    nombre_archivo = "Juego/commons/ip_port.txt"
+    nombre_archivo = "Entregable/NUEVO/tcp/commons/ip_port.txt"
 
     # Variables para almacenar la IP y el puerto del servidor
     ip_servidor = ""
@@ -62,6 +61,10 @@ def send_valid_input(sock):
         else:
             print(data)
 
+def end_game(tcp_sock):
+    close_tcp_socket(tcp_sock)
+    return 0
+
 def authenticate_user(sock):
     # Mensaje de bienvenida y opciones
     data = sock.recv(1024).decode()
@@ -96,4 +99,16 @@ def authenticate_user(sock):
     else:
         print(data)
         return False, False
+    
+
+
+
+
+
+
+    
+
+
+
+        
     
