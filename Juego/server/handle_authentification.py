@@ -63,7 +63,7 @@ def handle_authentification(connection):
             if login_user(user, password):
                 connection.sendall("SUCCESSFUL AUTHENTICATION".encode())
                 user_logged = True
-                return user
+                return user, connection
             else:
                 connection.sendall("User does not exist or password is incorrect\n".encode())
 
@@ -71,7 +71,7 @@ def handle_authentification(connection):
             if register_user(user, password):
                 connection.sendall("SUCCESSFUL AUTHENTICATION".encode())
                 user_logged = True
-                return user
+                return user, connection
             else:
                 connection.sendall("User already exists, please log in\n".encode())
         elif option == 3:
