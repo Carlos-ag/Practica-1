@@ -26,7 +26,11 @@ def join_multicast_group(multicast_group_ip, multicast_port):
     print("Joined multicast group. Waiting for game data...")
     while True:
         data, _ = sock.recvfrom(1024)
-        print(f"Received message from multicast group: {data.decode()}")
+        if data == "GAME STARTS":
+            print("Game starts!")
+        else:
+            print(data.decode())
+        
         # Implement game-specific logic based on received data here
 
 def start_game(tcp_sock):
@@ -47,6 +51,8 @@ def start_game(tcp_sock):
         _, multicast_group_ip, multicast_port = data.split(":")
         join_multicast_group(multicast_group_ip, int(multicast_port))
         print("connected yo multicast")
+    
+    tcp_sock.sendall("OK".encode())
 
 def main():
     tcp_sock = init_tcp_socket()

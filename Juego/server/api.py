@@ -9,24 +9,45 @@ def get_api_data():
 
     if response.status_code == 200:
         api_preguntas = response.json()
+        return transform_data(api_preguntas)
     else:
         print('Error:', response.status_code)
+        return []
 
-    return transform_data(api_preguntas)
+    
 
 
 
 # 2. Transformar los datos de la API en una lista de diccionarios
 def transform_data(data):
     formatted_list = []
+    replace_map = {
+        '&#039;': "'",
+        '&amp;': '&',
+        '&quot;': '"',
+        '&lt;': '<',
+        '&gt;': '>'
+    }
     for item in data['results']:
         all_answers = item['incorrect_answers'] + [item['correct_answer']]
         random.shuffle(all_answers)
+
+        question = item['question']
+        correct_answer = item['correct_answer']
+
+        for key, value in replace_map.items():
+            question = question.replace(key, value)
+            correct_answer = correct_answer.replace(key, value)
+            for i, answer in enumerate(all_answers):
+                all_answers[i] = all_answers[i].replace(key, value)
+
     
         question_map = {
-        "pregunta": item['question'].replace('&#039;', "'").replace('&amp;', '&'),
+        "pregunta": question,
         "respuestas": all_answers,
-        "respuesta_correcta": item['correct_answer']
+        "respuesta_correcta": correct_answer
     }
         formatted_list.append(question_map)
     return formatted_list
+
+get_api_data()
