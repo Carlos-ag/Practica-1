@@ -12,6 +12,8 @@ def main():
     while not authenficated and not is_exitting:
         authenficated, is_exitting = authenticate_user(tcp_sock)
         print(authenficated, is_exitting)
+        print("estoy saliendo")
+        print(authenficated, is_exitting)
         if is_exitting:
             end_game(tcp_sock)
 
