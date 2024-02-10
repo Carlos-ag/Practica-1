@@ -16,21 +16,9 @@ def enter_valid_input(list,connection):
 
     return int(number)
 
-def read_delimiter():
-    nombre_archivo = "Juego/commons/delimiter.txt"
-    # Variables para almacenar el delimitador
-    
-
-    # Abrir el archivo para leer
-    with open(nombre_archivo, 'r') as archivo:
-        # the file contains only one line, that is the delimiter
-        return archivo.readline().strip()
-
-delimiter = read_delimiter()
 
 def send_data(data, connection):
     connection.sendall(data.encode())
-
 
 
 
@@ -46,17 +34,24 @@ def handle_client_connection(client_socket):
             with threading.Lock():  # Ensure thread-safe modification of the authenticated_users list
                 global_variables.authenticated_users.append(user)
                 # recv OK from client
-                print("Waiting for OK from client")
-                print(client_socket.recv(1024).decode())
-                print("OK received")
+
+                print(client_socket.recv(1024).decode() + " from " + username)
+
                 if (len(global_variables.authenticated_users) >= global_variables.MIN_PLAYERS) and not global_variables.game_started:
+
                     global_variables.game_started = True
+
+                    # for all the users, receive the OK
+                    for user in global_variables.authenticated_users:
+                        try:
+                            user['connection_tcp'].sendall("GAME STARTS".encode())
+                        except:
+                            print(user)
+                            continue         
 
     except Exception as e:
         print("Error during client handling: ", e)
-    finally:
-        client_socket.close()
-
+    
 
 user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
 
@@ -72,7 +67,7 @@ def handle_authentification(connection):
         3. Delete user
         4. Exit\n\n""", connection)
 
-        print("Le pido al cliente que ingrese un numero")
+        print("Waiting for user input...")
         option = enter_valid_input([1, 2, 3, 4],connection)
 
         # recibir OK

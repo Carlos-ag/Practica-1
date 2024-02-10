@@ -19,19 +19,8 @@ def main():
             print(f"Connection from {client_address} has been established.")
             client_tcp_thread = threading.Thread(target=handle_client_connection, args=(connection,))
             client_tcp_thread.start()
-
-        print("Hola soy el server y el juego ya comenzo")
-
-        # for all the users, receive the OK
-        for user in global_variables.authenticated_users:
-            try:
-                print(user['connection_tcp'].recv(1024).decode())
-                user['connection_tcp'].sendall("OK".encode())
-            except:
-                print("Error al recibir OK")
-                continue         
-        
-     
+            
+                 
     except KeyboardInterrupt:
         print("Server is shutting down.")
     finally:

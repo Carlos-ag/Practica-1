@@ -13,12 +13,18 @@ def main():
             end_game(tcp_sock)
             return 0
     
+    
     # enviar al server que el cliente esta listo
     tcp_sock.sendall("READY".encode())
 
+    print("Waiting for the server to start the game")
+
     # recibir el mensaje de bienvenida
     data = tcp_sock.recv(1024).decode()
+    while data != "GAME STARTS":
+        data = tcp_sock.recv(1024).decode() 
     print(data)
+
 
 if __name__ == "__main__":
     main()
