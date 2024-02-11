@@ -115,6 +115,7 @@ def start_game(tcp_sock):
     data = tcp_sock.recv(1024).decode()
     while data == "":
         data = tcp_sock.recv(1024).decode()
+    print("Ya llego el mensaje")
 
     print(data)
     if data.startswith("MULTICAST_GROUP:"):

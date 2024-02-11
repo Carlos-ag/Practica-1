@@ -11,7 +11,7 @@ import global_variables
 authenticated_users = []
 users_lock = threading.Lock()
 global MIN_PLAYERS
-MIN_PLAYERS = 1
+MIN_PLAYERS = 2
 multicast_group_ip = '224.1.1.1'
 multicast_port = 5008
 
