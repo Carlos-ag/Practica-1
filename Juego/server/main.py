@@ -15,6 +15,8 @@ MIN_PLAYERS = 1
 multicast_group_ip = '224.1.1.1'
 multicast_port = 5008
 
+is_last_question = False
+
 udp_ip = "127.0.0.1"
 udp_port = 5005
 
@@ -57,6 +59,7 @@ def handle_client_connection(client_socket):
         print("Error during client handling: ", e)
     finally:
         client_socket.close()
+        return 
 
 def send_multicast_message(multicast_sock, message):
     multicast_sock.sendto(message.encode(), (multicast_group_ip, multicast_port)) 
@@ -64,7 +67,9 @@ def send_multicast_message(multicast_sock, message):
 
 
 def compute_score(time_to_answer):
-    return 10 * (1 - time_to_answer / 20)
+    # round to 2 decimal places
+    # return 10 * (1 - time_to_answer / 20)
+    return round(10 * (1 - time_to_answer / 20), 2)
 
 
 
@@ -80,7 +85,9 @@ def receive_answers_from_users(user_index, correct_answer, correct_answer_index)
         # if data.decode() == "STOP" and addr is the server address
         # stop the thread
         if data.decode() == "STOP" and addr == (udp_ip, udp_port):
-            print("Stopping thread as STOP message received")
+            if is_last_question:
+                end_game()
+                print("he ejecutado end_game")
             break
 
         
@@ -91,11 +98,14 @@ def receive_answers_from_users(user_index, correct_answer, correct_answer_index)
         for user in authenticated_users:
             if user['udp_address'] == addr:
                 user_answer = data.decode()
-                if (user_answer == correct_answer) or (user_answer == str(correct_answer_index)):
-                    user['score'] += compute_score(time.time() - global_variables.init_time_question)
-                    print(f"User {user['username']} answered correctly")
+                if user_answer != "":
+                    if (user_answer == correct_answer) or ((int(user_answer)-1) == correct_answer_index):
+                        user['score'] += compute_score(time.time() - global_variables.init_time_question)
+                        print(f"User {user['username']} answered correctly")
+                    else:
+                        print(f"User {user['username']} answered incorrectly")
                 else:
-                    print(f"User {user['username']} answered incorrectly")
+                    print(f"User {user['username']} did not answer")
                 break
 
 
@@ -109,11 +119,13 @@ def start_questions_game(authenticated_users):
     for i in range(len(global_variables.questions)):
         question = global_variables.questions[i]
         message = f"Question {i + 1}: {question['pregunta']}\n"
-        for i, respuesta in enumerate(question["respuestas"], 1):
-            message += f"{i}. {respuesta}\n"
+        for k, respuesta in enumerate(question["respuestas"], 1):
+            message += f"{k}. {respuesta}\n"
         
+        print("\n")
+
         # if last question, send a multicast message saying last question!
-        if i == len(global_variables.questions) - 1:
+        if i == (len(global_variables.questions) - 1):
             send_multicast_message(global_variables.multicast_sock, "Last question!")
 
         send_multicast_message(global_variables.multicast_sock, message)
@@ -133,23 +145,21 @@ def start_questions_game(authenticated_users):
         global_variables.udp_sock.sendto("STOP".encode(), (udp_ip, udp_port))
 
         # send in multicast the correct answer
-        send_multicast_message(global_variables.multicast_sock, "TIME OVER")
+        send_multicast_message(global_variables.multicast_sock, "TIME OVER FOR QUESTION {}\n".format(i + 1))
         send_multicast_message(global_variables.multicast_sock, f"The correct answer is answer {index + 1}: {respuesta_correcta}")
 
         # now send the scores of the users
-        scores = "Scores:\n"
+        scores = "\nScores:\n"
         for user in authenticated_users:
             scores += f"{user['username']}: {user['score']}\n"
         send_multicast_message(global_variables.multicast_sock, scores)
 
         # wait for 5 seconds
         if i < len(global_variables.questions) - 1:
-            send_multicast_message(global_variables.multicast_sock, f"Next question in 5 seconds...")
+            send_multicast_message(global_variables.multicast_sock, f"Get ready for question {i + 2} in 5 seconds...\n")
             time.sleep(5)
-        else:
-            send_multicast_message(global_variables.multicast_sock, "Game over!")
-            break
-
+        else: 
+            end_game()
         
 
 
@@ -188,13 +198,37 @@ def stablish_udp_connection():
 
 
 
-    
+def end_game():
+    send_multicast_message(global_variables.multicast_sock, "\n\nGame over!")
+    send_multicast_message(global_variables.multicast_sock, "\nThanks for playing!")
+    send_multicast_message(global_variables.multicast_sock, "\n\nPodium:\n")
+    authenticated_users.sort(key=lambda x: x['score'], reverse=True)
+    for user in authenticated_users:
+        send_multicast_message(global_variables.multicast_sock, f"{user['username']}: {user['score']}")
+
+    send_multicast_message(global_variables.multicast_sock, "\nBye!")
+    send_multicast_message(global_variables.multicast_sock, "END GAME")
+
+    try:
+        global game_started
+        game_started = False
+        global_variables.multicast_sock.close()
+        global_variables.udp_sock.close()
+        global_variables.init()
+        print("Game finished")
+        print("Server is shutting down.")
+        for user in authenticated_users:
+            user['connection_tcp'].close()
+        return 0
+    except:
+        exit()
 
 
 
 def start_game():
     stablish_udp_connection()
     start_questions_game(authenticated_users)
+    
 
 def intro_messages_game_multicast():
     multicast_sock = global_variables.multicast_sock
@@ -289,6 +323,7 @@ def main():
         print("Server is shutting down.")
     finally:
         server_socket.close()
+        return
 
 if __name__ == "__main__":
     main()

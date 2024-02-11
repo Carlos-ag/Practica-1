@@ -92,7 +92,7 @@ def authenticate_user(sock):
     
     # Mensaje de autenticación
     data = sock.recv(1024).decode()
-    print(data)
+    print("\n"+data)
     if data == "SUCCESSFUL AUTHENTICATION":
         return True, False
     elif data == "USER DELETED":

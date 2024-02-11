@@ -30,44 +30,55 @@ def handle_user_response_to_question():
     """
     Handles the user response to a question.
     """
-    userText, timedOut = timedInput("Please, do enter something: ", global_variables.time_per_question)
+    userText, timedOut = timedInput("Write the answer (write the full answer or the number):", global_variables.time_per_question)
     if(timedOut):
-        print("Timed out when waiting for input.")
+        print("\nTimed out when waiting for input.")
         global_variables.udp_sock.sendall(userText.encode())
     else:
         global_variables.udp_sock.sendall(userText.encode())
     
-    print("Response sent to server.")
+    print("Response sent to server.\n")
         
     
 
 
 def keep_receiving_multicast_messages(sock):
-    a = 0
-    previous_message_printed = ""
-    previous_previous_message_printed = ""
+    
+    messages_received = []
+    
+
     while True:
         data, _ = sock.recvfrom(1024)
-        # if data has this form: send_multicast_message(multicast_sock, f"UDP_SERVER:{udp_ip}:{udp_port}")
-        if (not global_variables.udp_connected) and (data.decode().startswith("UDP_SERVER:")):
-            udp_ip, udp_port = data.decode().split(":")[1:]
-            udp_port = int(udp_port)
-            connect_to_udp_server(udp_ip, udp_port)
+        if data.decode().startswith("\nScores:") or (data not in messages_received):
 
-        elif data.decode().startswith("TIME_PER_QUESTION:"):
-            global_variables.time_per_question = int(data.decode().split(":")[1])
-            print(f"Time per question: {global_variables.time_per_question}")
+            messages_received.append(data)
+            # if data has this form: send_multicast_message(multicast_sock, f"UDP_SERVER:{udp_ip}:{udp_port}")
+            if (not global_variables.udp_connected) and (data.decode().startswith("UDP_SERVER:")):
+                udp_ip, udp_port = data.decode().split(":")[1:]
+                udp_port = int(udp_port)
+                connect_to_udp_server(udp_ip, udp_port)
 
-        elif data.decode().startswith("Question"):
-            print(data.decode())
-            handle_user_response_to_question()
+            elif data.decode().startswith("TIME_PER_QUESTION:"):
+                global_variables.time_per_question = int(data.decode().split(":")[1])
+                print(f"\nTime per question: {global_variables.time_per_question}\n")
+
+            elif data.decode().startswith("Question"):
+                print(data.decode())
+                handle_user_response_to_question()
+            
+            elif data.decode().startswith("\nScores:"):
+                
+                if (not messages_received[-3].decode().startswith("\nScores:")) and (not messages_received[-2].decode().startswith("\nScores:")):
+                    print(data.decode())
 
             
-        elif (data != previous_message_printed) and (data != previous_previous_message_printed):
-            print(data.decode())
-            previous_previous_message_printed = previous_message_printed
-            previous_message_printed = data
-        
+            elif data.decode().startswith("END GAME"):
+                exit()
+                return
+
+                
+            else:
+                print(data.decode())
         
 
 def join_multicast_group(multicast_group_ip, multicast_port):
@@ -86,7 +97,7 @@ def join_multicast_group(multicast_group_ip, multicast_port):
 
     
 
-    print("Joined multicast group. Waiting for game data...")
+    print("Joined multicast group. Waiting for game data...\n")
     # create a thread to keep printing multicast messages
     t = threading.Thread(target=keep_receiving_multicast_messages, args=(sock,))
     t.start()
@@ -99,7 +110,7 @@ def start_game(tcp_sock):
     """
     # send OK to server
     tcp_sock.sendall("OK".encode())
-    print("Waiting for multicast group details from server...")
+    print("\nWaiting for multicast group details from server...")
     
     data = tcp_sock.recv(1024).decode()
     while data == "":
