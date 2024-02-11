@@ -1,5 +1,6 @@
 import socket 
 import sys
+import global_variables
 # TODO: MIRAR SI UNCOMMENTEAR ESTO
 # from ask_ip_port import ask_ip_port
 global user_state
@@ -41,6 +42,7 @@ def handle_login_register_delete(sock):
     print(sock.recv(1024).decode())
     user_name = input()
     sock.sendall(user_name.encode())
+    global_variables.username = user_name
 
     # password
     print(sock.recv(1024).decode())
@@ -66,6 +68,9 @@ def authenticate_user(sock):
     # Mensaje de bienvenida y opciones
     data = sock.recv(1024).decode()
     print(data)
+
+    if data == "GAME ALREADY STARTED TRY AGAIN LATER":
+        return False, True
 
     # Selección de opción
 

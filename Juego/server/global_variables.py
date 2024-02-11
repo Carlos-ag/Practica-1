@@ -1,4 +1,12 @@
+from api import get_api_data
+
 def init():
+    global questions
+    questions = get_api_data()
+    global multicast_sock 
+    multicast_sock = None
+
+
     global game_started
     game_started = False
     global MIN_PLAYERS
@@ -20,4 +28,5 @@ def init():
     time_per_question = 20
 
     
+
 

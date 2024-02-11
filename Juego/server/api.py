@@ -49,5 +49,3 @@ def transform_data(data):
     }
         formatted_list.append(question_map)
     return formatted_list
-
-get_api_data()

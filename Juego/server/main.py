@@ -5,6 +5,7 @@ import struct
 from handle_authentification import handle_authentification
 import time
 from api import get_api_data
+import global_variables
 
 # Shared structure for authenticated users with a threading lock for thread-safe access
 authenticated_users = []
@@ -13,8 +14,10 @@ global MIN_PLAYERS
 MIN_PLAYERS = 1
 multicast_group_ip = '224.1.1.1'
 multicast_port = 5008
-global questions
-questions = get_api_data()
+
+udp_ip = "127.0.0.1"
+udp_port = 5005
+
 global game_started
 game_started = False
 
@@ -23,22 +26,30 @@ def handle_client_connection(client_socket):
     global min_players
     global game_started
     try:
-        username, connection_user = handle_authentification(client_socket)
-        user = {
-            "username": username,
-            "connection_tcp": connection_user,
-            "score": 0,
-        }
-        if user:  # Assuming handle_authentification returns a user object on success
-            with users_lock:  # Ensure thread-safe modification of the authenticated_users list
-                authenticated_users.append(user)
-                # recv OK from client
-                print("Waiting for OK from client")
-                print(client_socket.recv(1024).decode())
-                print("OK received")
-                if (len(authenticated_users) >= MIN_PLAYERS) and not game_started:
-                    game_started = True
-                    start_multicast()
+        if len(authenticated_users) >= MIN_PLAYERS:
+            # send "GAME ALREADY STARTED TRY AGAIN LATER"
+            client_socket.sendall("GAME ALREADY STARTED TRY AGAIN LATER".encode())
+            print("Game already started for user {}".format(client_socket.getpeername()))
+            # close connection
+            client_socket.close()
+            while True:
+                pass
+
+        else:   
+            username, connection_user = handle_authentification(client_socket)
+            user = {
+                "username": username,
+                "connection_tcp": connection_user,
+                "score": 0,
+            }
+            if user:  # Assuming handle_authentification returns a user object on success
+                with users_lock:  # Ensure thread-safe modification of the authenticated_users list
+                    authenticated_users.append(user)
+                    # recv OK from client
+                    print(client_socket.recv(1024).decode())
+                    if (len(authenticated_users) >= MIN_PLAYERS) and (not game_started):
+                        game_started = True
+                        start_multicast()
 
                    
                     
@@ -47,50 +58,167 @@ def handle_client_connection(client_socket):
     finally:
         client_socket.close()
 
-def send_multicast_message(message):
-    sock.sendto(message.encode(), (multicast_group_ip, multicast_port)) 
+def send_multicast_message(multicast_sock, message):
+    multicast_sock.sendto(message.encode(), (multicast_group_ip, multicast_port)) 
 
-def start_udp_socket():
-    """
-    Starts a UDP socket to send messages to all connected clients.
-    """
-    # you have to stablish a connection with all the authenticated_users
-    # so you will have to send them a 
-    
+
 
 def compute_score(time_to_answer):
     return 10 * (1 - time_to_answer / 20)
 
 
-def start_questions_game(questions, authenticated_users):
-    # you will have to use threading to send the questions to all the users
-    # for each user stablish connection using a new UDP socket
-    # send the question to the user
-    # wait for the answer or a timeout of 20 seconds
-    # if the user answers correctly, GOOD ANSWER your new score is X
-    # if the user answers incorrectly, BAD ANSWER the correct answer was X and here is the new score
-    return 0
+
+def receive_answers_from_users(user_index, correct_answer, correct_answer_index):
+    # in this function you will have to receive the answers from the users
+    # and then you will have to compute the score of each user
+    # when the time is over you will receive a UDP message from the server to stop the thread
+    # HHHADFKLHALSKDJLÑAKSJDÑLKJASFÑLKJFÑLKJ
+    # while answers_received < len(authenticated_users):
+    while True:
+        data, addr = global_variables.udp_sock.recvfrom(1024)
+        
+        # if data.decode() == "STOP" and addr is the server address
+        # stop the thread
+        if data.decode() == "STOP" and addr == (udp_ip, udp_port):
+            print("Stopping thread as STOP message received")
+            break
+
+        
+        print(f"Received UDP message from {addr}: {data.decode()}")
+        global_variables.answers_received+=1
+
+        # check if the address is in the authenticated_users list
+        for user in authenticated_users:
+            if user['udp_address'] == addr:
+                user_answer = data.decode()
+                if (user_answer == correct_answer) or (user_answer == str(correct_answer_index)):
+                    user['score'] += compute_score(time.time() - global_variables.init_time_question)
+                    print(f"User {user['username']} answered correctly")
+                else:
+                    print(f"User {user['username']} answered incorrectly")
+                break
 
 
 
-def start_game_multicast(sock):
+    
 
+def start_questions_game(authenticated_users):
+
+    threads_list = []
+
+    for i in range(len(global_variables.questions)):
+        question = global_variables.questions[i]
+        message = f"Question {i + 1}: {question['pregunta']}\n"
+        for i, respuesta in enumerate(question["respuestas"], 1):
+            message += f"{i}. {respuesta}\n"
+        
+        # if last question, send a multicast message saying last question!
+        if i == len(global_variables.questions) - 1:
+            send_multicast_message(global_variables.multicast_sock, "Last question!")
+
+        send_multicast_message(global_variables.multicast_sock, message)
+
+        respuesta_correcta = question["respuesta_correcta"]
+        index = question["respuestas"].index(respuesta_correcta)
+
+        global_variables.init_time_question = time.time()
+        global_variables.answers_received = 0
+        t = threading.Thread(target=receive_answers_from_users, args=(index, respuesta_correcta, index))
+        t.start()
+        
+        
+        while (time.time() - global_variables.init_time_question < global_variables.time_per_question) and (global_variables.answers_received < len(authenticated_users)):
+            pass
+
+        global_variables.udp_sock.sendto("STOP".encode(), (udp_ip, udp_port))
+
+        # send in multicast the correct answer
+        send_multicast_message(global_variables.multicast_sock, "TIME OVER")
+        send_multicast_message(global_variables.multicast_sock, f"The correct answer is answer {index + 1}: {respuesta_correcta}")
+
+        # now send the scores of the users
+        scores = "Scores:\n"
+        for user in authenticated_users:
+            scores += f"{user['username']}: {user['score']}\n"
+        send_multicast_message(global_variables.multicast_sock, scores)
+
+        # wait for 5 seconds
+        if i < len(global_variables.questions) - 1:
+            send_multicast_message(global_variables.multicast_sock, f"Next question in 5 seconds...")
+            time.sleep(5)
+        else:
+            send_multicast_message(global_variables.multicast_sock, "Game over!")
+            break
+
+        
+
+
+    
+
+def stablish_udp_connection():
+    # you will have to stablish a connection with all the authenticated_users
+    # for that you will have to create a new UDP socket and then create a new thread to handle the connection for each user
+    # you will send the udp address with multicast to the users
+
+    multicast_sock = global_variables.multicast_sock
+
+    global_variables.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    global_variables.udp_sock.bind((udp_ip, udp_port))
+    print("UDP socket is listening on {}:{}".format(udp_ip, udp_port))
+
+    send_multicast_message(multicast_sock, f"UDP_SERVER:{udp_ip}:{udp_port}")
+
+    # listen for the users and stablish the connection
+    connected_users = 0
+    while connected_users < len(authenticated_users):
+        data, addr = global_variables.udp_sock.recvfrom(1024)
+        print(f"Received UDP connection from {addr}")
+        for user in authenticated_users:
+            if user['username'] == data.decode():
+                user['udp_address'] = addr
+                connected_users += 1
+                break
+
+    
+    time_to_answer = global_variables.time_per_question
+    
+    send_multicast_message(multicast_sock, f"TIME_PER_QUESTION:{time_to_answer}")
+    
+
+
+
+
+    
+
+
+
+def start_game():
+    stablish_udp_connection()
+    start_questions_game(authenticated_users)
+
+def intro_messages_game_multicast():
+    multicast_sock = global_variables.multicast_sock
+    print("entering start_game_multicast")
     # Send data to the multicast group
-    sock.sendto("Let's starts the game!".encode(), (multicast_group_ip, multicast_port))
+    send_multicast_message(multicast_sock, "Let's starts the game!")
  
     for i in range(5):
         message = f"GAME STARTS IN {5 - i} SECONDS..."
-        send_multicast_message(message)
         time.sleep(1)
+        send_multicast_message(multicast_sock, message)
     
-    send_multicast_message("GAME STARTS")
+    time.sleep(1)
+    send_multicast_message(multicast_sock, "GAME STARTS")
 
-    start_questions_game(questions, authenticated_users)
+    
 
 def start_multicast():
     sock = start_multicast_group()
-    send_multicast_to_users()
-    start_game_multicast(sock)
+    global_variables.multicast_sock = sock
+    send_multicast_information_to_users()
+    intro_messages_game_multicast()
+    start_game()
+
 
 
 
@@ -99,9 +227,6 @@ def start_multicast_group():
     Starts a multicast group to send messages to all connected clients.
     """
 
-    print("ESTOY EN EL MULTICAST")
-
-    print("EL JUEGO HA EMPEZADO")
     # Create the socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -117,30 +242,20 @@ def start_multicast_group():
     
 
 
-def send_multicast_to_users():
-    # Define multicast group IP and port
+def send_multicast_information_to_users():
    
-    print("Starting game...")
-
     # Inform all authenticated users about the multicast group
     info_message = f"MULTICAST_GROUP:{multicast_group_ip}:{multicast_port}"
     print(f"Sending multicast info to {len(authenticated_users)} users...")
-    print(authenticated_users)
-    print("hola")
 
     for user in authenticated_users:
         print(user)
         try:
             # Assuming each 'user' object has a reference to its TCP socket
             user_socket = user['connection_tcp']
-            print("esto es lo que se va a enviar")
-            print(info_message)
             user_socket.sendall(info_message.encode())
-            print("enviado")
             # recv OK from client
-            print("Waiting for OK from client")
             print(user_socket.recv(1024).decode())
-            print("OK received")
             
         except Exception as e:
             print(f"Failed to send multicast info to {user['username']}: {e}")
@@ -156,6 +271,9 @@ def send_multicast_to_users():
 
 def main():
     global game_started
+    global_variables.init()
+
+
     server_socket = init_tcp_socket()
     print("Server is listening on {}".format(server_socket.getsockname()))
 
