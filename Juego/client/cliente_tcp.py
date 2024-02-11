@@ -31,6 +31,8 @@ def init_tcp_socket():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = read_ip_port()
     sock.connect(server_address)
+    # set timeout to None
+    sock.settimeout(None)
     return sock
 
 def close_tcp_socket(sock):

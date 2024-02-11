@@ -6,6 +6,7 @@ from handle_authentification import handle_authentification
 import time
 from api import get_api_data
 import global_variables
+from copy import deepcopy
 
 # Shared structure for authenticated users with a threading lock for thread-safe access
 authenticated_users = []
@@ -13,7 +14,7 @@ users_lock = threading.Lock()
 global MIN_PLAYERS
 MIN_PLAYERS = 2
 multicast_group_ip = '224.1.1.1'
-multicast_port = 5008
+multicast_port = 5001
 
 is_last_question = False
 
@@ -22,6 +23,8 @@ udp_port = 5005
 
 global game_started
 game_started = False
+
+
 
 
 def handle_client_connection(client_socket):
@@ -39,27 +42,29 @@ def handle_client_connection(client_socket):
 
         else:   
             username, connection_user = handle_authentification(client_socket)
-            user = {
-                "username": username,
-                "connection_tcp": connection_user,
-                "score": 0,
-            }
-            if user:  # Assuming handle_authentification returns a user object on success
-                with users_lock:  # Ensure thread-safe modification of the authenticated_users list
-                    authenticated_users.append(user)
-                    # recv OK from client
-                    print(client_socket.recv(1024).decode())
-                    if (len(authenticated_users) >= MIN_PLAYERS) and (not game_started):
-                        game_started = True
-                        start_multicast()
+            if username != None:
+                user = {
+                    "username": username,
+                    "connection_tcp": connection_user,
+                    "score": 0,
+                }
+                if user:  # Assuming handle_authentification returns a user object on success
+                    with users_lock:  # Ensure thread-safe modification of the authenticated_users list
+                        authenticated_users.append(user)
+                        # recv OK from client
+                        print(client_socket.recv(1024).decode())
+                        if (len(authenticated_users) >= MIN_PLAYERS) and (not game_started):
+                            game_started = True
+                            start_multicast()
 
                    
                     
     except Exception as e:
         print("Error during client handling: ", e)
     finally:
-        client_socket.close()
-        return 
+        if global_variables.game_ended:
+            client_socket.close()
+            return 
 
 def send_multicast_message(multicast_sock, message):
     multicast_sock.sendto(message.encode(), (multicast_group_ip, multicast_port)) 
@@ -199,6 +204,7 @@ def stablish_udp_connection():
 
 
 def end_game():
+    global_variables.game_ended = True
     send_multicast_message(global_variables.multicast_sock, "\n\nGame over!")
     send_multicast_message(global_variables.multicast_sock, "\nThanks for playing!")
     send_multicast_message(global_variables.multicast_sock, "\n\nPodium:\n")
@@ -314,6 +320,8 @@ def main():
     try:
         while not game_started:
             connection, client_address = server_socket.accept()
+        
+            connection.settimeout(None)
             print(f"Connection from {client_address} has been established.")
             client_tcp_thread = threading.Thread(target=handle_client_connection, args=(connection,))
             client_tcp_thread.start() 

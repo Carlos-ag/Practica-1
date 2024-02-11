@@ -27,6 +27,9 @@ def init():
     global time_per_question
     time_per_question = 20
 
+    global game_ended
+    game_ended = False
+
     
 
 
