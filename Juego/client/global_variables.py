@@ -1,4 +1,7 @@
 def init():
+    """
+    Inicializa las variables globales
+    """
     global username
     username = ""
     global time_per_question

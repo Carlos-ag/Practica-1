@@ -4,6 +4,9 @@ from cliente_tcp import init_tcp_socket, authenticate_user, close_tcp_socket, en
 
 
 def main():
+    """
+    Función principal del cliente
+    """
     tcp_sock = init_tcp_socket()
     authenticated = False
     is_exitting = False
@@ -13,13 +16,10 @@ def main():
             end_game(tcp_sock)
             return 0
     
-    
-    # enviar al server que el cliente esta listo
     tcp_sock.sendall("READY".encode())
 
     print("Waiting for the server to start the game")
 
-    # recibir el mensaje de bienvenida
     data = tcp_sock.recv(1024).decode()
     while data != "GAME STARTS":
         data = tcp_sock.recv(1024).decode() 

@@ -1,6 +1,9 @@
 from api import get_api_data
 
 def init():
+    """
+    Inicializa las variables globales del servidor.
+    """
     global questions
     questions = get_api_data()
     global multicast_sock 

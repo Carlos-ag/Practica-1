@@ -1,3 +1,4 @@
+
 import socket 
 import sys
 from handle_authentification import handle_authentification , handle_client_connection
@@ -8,6 +9,10 @@ import global_variables
 
 
 def main():
+    """
+    Función principal del servidor. Inicializa el socket y se queda escuchando por conexiones entrantes.
+    """
+
     global_variables.init()
 
     server_socket = init_tcp_socket()

@@ -1,4 +1,7 @@
 def init():
+    """
+    Inicializa las variables globales del servidor    
+    """
     global game_started
     game_started = False
     global MIN_PLAYERS
@@ -15,7 +18,6 @@ def init():
     global answers_received
     answers_received = 0
     
-    # CONSTANTS
     global time_per_question
     time_per_question = 20
 

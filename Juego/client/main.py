@@ -8,27 +8,27 @@ import global_variables
 from pytimedinput import timedInput
 
 
-
-
 def end_game(tcp_sock):
+    """
+    Ends the game.
+    """
     close_tcp_socket(tcp_sock)
     return 0
 
 def connect_to_udp_server(udp_ip, udp_port):
     """
-    Connects to the UDP server.
+    se conecta al servidor UDP
     """
     global_variables.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     global_variables.udp_sock.connect((udp_ip, udp_port))
     
     global_variables.udp_connected = True
     
-    # send username to server
     global_variables.udp_sock.sendall(global_variables.username.encode())
 
 def handle_user_response_to_question():
     """
-    Handles the user response to a question.
+    maneja la respuesta del usuario a una pregunta
     """
     userText, timedOut = timedInput("Write the answer (write the full answer or the number):", global_variables.time_per_question)
     if(timedOut):
@@ -40,19 +40,17 @@ def handle_user_response_to_question():
     print("Response sent to server.\n")
         
     
-
-
 def keep_receiving_multicast_messages(sock):
-    
+    """
+    mantine la recepcion de mensajes multicast
+    """    
     messages_received = []
     
-
     while True:
         data, _ = sock.recvfrom(1024)
         if data.decode().startswith("\nScores:") or (data not in messages_received):
 
             messages_received.append(data)
-            # if data has this form: send_multicast_message(multicast_sock, f"UDP_SERVER:{udp_ip}:{udp_port}")
             if (not global_variables.udp_connected) and (data.decode().startswith("UDP_SERVER:")):
                 udp_ip, udp_port = data.decode().split(":")[1:]
                 udp_port = int(udp_port)
@@ -83,22 +81,21 @@ def keep_receiving_multicast_messages(sock):
 
 def join_multicast_group(multicast_group_ip, multicast_port):
     """
-    Joins a multicast group to receive messages.
+    se une a un grupo multicast para recibir mensajes
     """
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    
-    # Bind to the server address    
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    # se une al grupo multicast
     sock.bind(('', multicast_port))
     group = socket.inet_aton(multicast_group_ip)
     mreq = struct.pack('4sL', group, socket.INADDR_ANY)
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
     
-
+    # se inicia el hilo para recibir mensajes multicast
     print("Joined multicast group. Waiting for game data...\n")
-    # create a thread to keep printing multicast messages
     t = threading.Thread(target=keep_receiving_multicast_messages, args=(sock,))
     t.start()
 
@@ -106,9 +103,8 @@ def join_multicast_group(multicast_group_ip, multicast_port):
 
 def start_game(tcp_sock):
     """
-    Waits for multicast group details from the server and then joins the group.
+    espera los detalles del grupo multicast del servidor y luego se une al grupo
     """
-    # send OK to server
     tcp_sock.sendall("OK".encode())
     print("\nWaiting for multicast group details from server...")
     
@@ -120,22 +116,18 @@ def start_game(tcp_sock):
     print(data)
     if data.startswith("MULTICAST_GROUP:"):
         _, multicast_group_ip, multicast_port = data.split(":")
-        # send OK to server
         tcp_sock.sendall("OK".encode())
         join_multicast_group(multicast_group_ip, int(multicast_port))
 
-    # CUIDADOOOOOOOO    
-    # tcp_sock.sendall("OK".encode())
     while global_variables.udp_connected == False:
         pass
-
-    
-    
-
 
 
 
 def main():
+    """
+    punto de entrada del programa
+    """
     global_variables.init()
     tcp_sock = init_tcp_socket()
     authenticated = False

@@ -4,24 +4,28 @@ from authentification_functions import login_user, register_user, update_score, 
 from valid_input import enter_valid_input
 
 def read_delimiter():
+    """
+    Lee el delimitador de un archivo de texto
+    """
     nombre_archivo = "Juego/commons/delimiter.txt"
-    # Variables para almacenar el delimitador
-    
-
-    # Abrir el archivo para leer
     with open(nombre_archivo, 'r') as archivo:
-        # the file contains only one line, that is the delimiter
         return archivo.readline().strip()
 
 delimiter = read_delimiter()
 
 def send_data(data, connection):
+    """
+    Envia un mensaje al cliente
+    """
     connection.sendall(data.encode())
 
 
 user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
 
 def handle_authentification(connection):
+    """
+    Maneja la autenticacion, registro y eliminacion de usuarios
+    """
     user_logged = False
     send_data("Welcome to the game" + "\n\n", connection)
     error = False
@@ -37,7 +41,6 @@ def handle_authentification(connection):
             print("Le pido al cliente que ingrese un numero")
             option = enter_valid_input([1, 2, 3, 4],connection)
 
-            # recibir OK
             data = connection.recv(1024).decode()
             if data != "OK":
                 print("ERROR")
@@ -58,9 +61,7 @@ def handle_authentification(connection):
         
 
 
-            if option == 1:
-
-                # log in
+            if option == 1:# log in
                 if login_user(user, password):
                     connection.sendall("SUCCESSFUL AUTHENTICATION".encode())
                     user_logged = True
@@ -75,8 +76,7 @@ def handle_authentification(connection):
                     return user, connection
                 else:
                     connection.sendall("User already exists, please log in\n".encode())
-            elif option == 3:
-                # delete user
+            elif option == 3:# delete user
                 if delete_user(user, password):
                     connection.sendall("USER DELETED".encode())
                 else:

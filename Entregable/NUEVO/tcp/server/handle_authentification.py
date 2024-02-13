@@ -5,6 +5,10 @@ import global_variables
 import threading
 
 def enter_valid_input(list,connection):
+    """
+    esta función recibe una seleccion de una conexión, y se encarga de comprobar si el número ingresado es válido para el menú de opciones
+    
+    """
     user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
     number = connection.recv(1024).decode()
 
@@ -18,11 +22,17 @@ def enter_valid_input(list,connection):
 
 
 def send_data(data, connection):
+    """
+    esta función recibe un mensaje y una conexión, y se encarga de enviar el mensaje a la conexión
+    """
     connection.sendall(data.encode())
 
 
 
 def handle_client_connection(client_socket):
+    """
+    esta función recibe un socket de un cliente, y se encarga de manejar la autenticación del usuario, además de manejar el inicio del juego
+    """
     try:
         username, connection_user = handle_authentification(client_socket)
         user = {
@@ -30,24 +40,25 @@ def handle_client_connection(client_socket):
             "connection_tcp": connection_user,
             "score": 0,
         }
-        if user:  # Assuming handle_authentification returns a user object on success
-            with threading.Lock():  # Ensure thread-safe modification of the authenticated_users list
-                global_variables.authenticated_users.append(user)
-                # recv OK from client
+        if user:  
+            with threading.Lock():  
+                try: 
+                    global_variables.authenticated_users.append(user)
+                    
 
-                print(client_socket.recv(1024).decode() + " from " + username)
+                    print(client_socket.recv(1024).decode() + " from " + username)
 
-                if (len(global_variables.authenticated_users) >= global_variables.MIN_PLAYERS) and not global_variables.game_started:
+                    if (len(global_variables.authenticated_users) >= global_variables.MIN_PLAYERS) and not global_variables.game_started:
 
-                    global_variables.game_started = True
-
-                    # for all the users, receive the OK
-                    for user in global_variables.authenticated_users:
-                        try:
-                            user['connection_tcp'].sendall("GAME STARTS".encode())
-                        except:
-                            print(user)
-                            continue         
+                        global_variables.game_started = True
+                        for user in global_variables.authenticated_users:
+                            try:
+                                user['connection_tcp'].sendall("GAME STARTS".encode())
+                            except:
+                                print(user)
+                                continue         
+                except Exception as e:
+                    print("Error during client handling: ", e)
 
     except Exception as e:
         print("Error during client handling: ", e)
@@ -56,6 +67,9 @@ def handle_client_connection(client_socket):
 user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
 
 def handle_authentification(connection):
+    """
+    esta función recibe una conexión, y se encarga de manejar la autenticación del usuario, además de manejar el inicio del juego
+    """
     user_logged = False
     send_data("Welcome to the game" + "\n\n", connection)
     error = False
@@ -69,8 +83,6 @@ def handle_authentification(connection):
 
         print("Waiting for user input...")
         option = enter_valid_input([1, 2, 3, 4],connection)
-
-        # recibir OK
         data = connection.recv(1024).decode()
         if data != "OK":
             print("ERROR")

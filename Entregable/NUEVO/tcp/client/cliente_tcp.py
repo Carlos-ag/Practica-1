@@ -5,37 +5,44 @@ global user_state
 user_state = ["LOGIN", "REGISTER", "DELETE", "EXIT"]
 
 def read_ip_port():
+    """
+    Lee el archivo de configuración y retorna la IP y el puerto del servidor.
+    """
     nombre_archivo = "Entregable/NUEVO/tcp/commons/ip_port.txt"
 
-    # Variables para almacenar la IP y el puerto del servidor
     ip_servidor = ""
     puerto_servidor = ""
 
-    # Abrir el archivo para leer
     with open(nombre_archivo, 'r') as archivo:
         for linea in archivo:
-            # Verificar si la línea contiene la palabra 'SERVER'
             if 'SERVER' in linea:
-                # Partir la línea por las comas y quitar espacios en blanco
                 partes = linea.split(',')
                 ip_servidor = partes[1].strip()
                 puerto_servidor = partes[2].strip()
-                break  # No es necesario continuar si ya encontramos el servidor
-
+                break  
     return (ip_servidor, int(puerto_servidor))
 
 
 def init_tcp_socket():
+    """
+    Inicializa un socket TCP y se conecta al servidor.
+    """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = read_ip_port()
     sock.connect(server_address)
     return sock
 
 def close_tcp_socket(sock):
+    """
+    Cierra el socket TCP.
+    """
     sock.close()
 
 
 def handle_login_register_delete(sock):
+    """
+    Función que maneja el login, registro y eliminación de usuarios.
+    """
     # username
     print(sock.recv(1024).decode())
     user_name = input()
@@ -48,6 +55,9 @@ def handle_login_register_delete(sock):
     
 
 def send_valid_input(sock):
+    """
+    Función que envía una opción válida al servidor.
+    """
     global user_state
     valid_answer = False
     while not valid_answer:
@@ -62,10 +72,18 @@ def send_valid_input(sock):
             print(data)
 
 def end_game(tcp_sock):
+    """
+    Función que maneja el fin del juego.
+    """
     close_tcp_socket(tcp_sock)
     return 0
 
 def authenticate_user(sock):
+    """
+    Función que maneja la autenticación del usuario.
+    """
+
+
     # Mensaje de bienvenida y opciones
     data = sock.recv(1024).decode()
     print(data)

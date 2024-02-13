@@ -2,9 +2,7 @@ import random
 import requests
 
 def get_api_data():
-    """
-    Función que obtiene los datos de la API de preguntas.
-    """
+    # 1. Realizar una llamada a la API
     url = 'https://opentdb.com/api.php?amount=5&difficulty=easy&type=multiple'
 
     response = requests.get(url)
@@ -16,11 +14,12 @@ def get_api_data():
         print('Error:', response.status_code)
         return []
 
+    
 
+
+
+# 2. Transformar los datos de la API en una lista de diccionarios
 def transform_data(data):
-    """
-    Función que transforma los datos de la API en un formato más amigable.
-    """
     formatted_list = []
     replace_map = {
         '&#039;': "'",
