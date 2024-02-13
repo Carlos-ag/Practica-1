@@ -6,4 +6,4 @@
 En este repositorio puede encontrar todos los codigos de nuestra práctica 1 de sistemas distribuidos. Los informes están subidos a Moodle.
 
 Ver una demo del juego:
-[Ver vídeo demo en Youtube]([URL "título opcional"](https://www.youtube.com/watch?v=eRY82HE51TI)https://www.youtube.com/watch?v=eRY82HE51TI)
+[Ver vídeo demo en Youtube](https://www.youtube.com/watch?v=eRY82HE51TI)
