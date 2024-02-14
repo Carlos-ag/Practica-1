@@ -2,59 +2,64 @@ import socket
 import pickle
 import sys
 
-def send_message(client_socket, server_address, message):
+# Configuración inicial
+SERVER_IP = input("Ingrese la dirección IP del servidor: ")
+PORT = input("Ingrese el número de puerto del servidor: ")
+try:
+    PORT = int(PORT)
+except ValueError:
+    print("El puerto debe ser un número.")
+    exit(1)
+
+# Crear el socket UDP
+client_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+server_address = (SERVER_IP, PORT)
+
+# Identificador único para este cliente
+client_id = input("Ingrese su identificador de jugador (por ejemplo, Cliente1): ")
+
+# Función para enviar respuestas al servidor
+def send_answer(answer):
+    message = (answer, client_id)
+    client_socket.sendto(pickle.dumps(message), server_address)
+
+# Conectarse al servidor
+client_socket.sendto(pickle.dumps(f"Hola servidor, soy {client_id}"), server_address)
+
+# Esperar confirmación de conexión
+data, _ = client_socket.recvfrom(1024)
+print(pickle.loads(data))
+
+def select_valid_answer():
+    selected_answer = input("Seleccione su respuesta (número): ")
     try:
-        client_socket.sendto(pickle.dumps(message), server_address)
-        server_response, _ = client_socket.recvfrom(4096)
-        return pickle.loads(server_response)
-    except Exception as e:
-        print(f"Error sending message to server: {e}")
-        return None
+        return int(selected_answer)
+    except ValueError:
+        print("La selección debe ser un número. Su respuesta no fue enviada.")
+        return select_valid_answer()
 
-def main(server_ip, server_port, client_id):
-    client_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-    client_socket.settimeout(10.0)
-    server_address = (server_ip, server_port)
-
-    initial_message = {"client_id": client_id, "message": "START"}
-    print("Starting game...")
-    response = send_message(client_socket, server_address, initial_message)
-
+try:
     while True:
-        if response and 'action' in response and response['action'] == 'next_question':
-            response = send_message(client_socket, server_address, {"client_id": client_id, "message": "NEXT"})
-            continue
+        # Esperar pregunta del servidor
+        data, _ = client_socket.recvfrom(4096)
+        question = pickle.loads(data)
 
-        if response and 'pregunta' in response:
-            print("\nNew Question:")
-            print(response["pregunta"])
-            for idx, option in enumerate(response["respuestas"], start=1):
+        if isinstance(question, str) and question.startswith("Resultados del juego"):
+            print(question)
+            break
+        else:
+            print(f"Pregunta: {question['pregunta']}")
+            for idx, option in enumerate(question['respuestas'], start=1):
                 print(f"{idx}. {option}")
-            user_answer = input("Your answer (number): ")
+            selected_answer = select_valid_answer()
+
             try:
-                answer_index = int(user_answer) - 1
-                if answer_index < 0 or answer_index >= len(response["respuestas"]):
-                    raise ValueError
-                answer_message = {"client_id": client_id, "respuesta": response["respuestas"][answer_index]}
-            except ValueError:
-                print("Invalid answer, try again.")
-                continue
-            result = send_message(client_socket, server_address, answer_message)
-            if result:
-                print(result["message"])
-            continue_game = input("Type 'EXIT' to quit or press Enter to continue: ").strip()
-            if continue_game.upper() == "EXIT":
-                send_message(client_socket, server_address, {"client_id": client_id, "message": "EXIT"})
-                break
-
+                # Convertir la selección del usuario en la respuesta correspondiente
+                answer = question['respuestas'][int(selected_answer) - 1]
+                send_answer(answer)
+            except (ValueError, IndexError):
+                print("Selección inválida. Respuesta no enviada.")
+except KeyboardInterrupt:
+    print("\nJuego terminado por el usuario.")
+finally:
     client_socket.close()
-    print("Game ended.")
-
-if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python client.py <Server IP> <Server Port> <Client ID>")
-    else:
-        server_ip = sys.argv[1]
-        server_port = int(sys.argv[2])
-        client_id = sys.argv[3]
-        main(server_ip, server_port, client_id)
