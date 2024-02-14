@@ -20,6 +20,7 @@ print(f"Servidor UDP listo y escuchando en el puerto {PORT}.")
 client_scores = {}
 questions = get_api_data() 
 current_question = 0
+game_ended = False
 
 def send_question_to_all():
     if current_question < len(questions):
@@ -27,13 +28,20 @@ def send_question_to_all():
             question = questions[current_question]
             server_socket.sendto(pickle.dumps(question), client_scores[client_address]['address'])
     else:
-        end_game()
+        if not game_ended:
+            end_game()
 
 def receive_answers():
     global current_question
+    global game_ended
     answers_received = 0
-    while answers_received < len(client_scores):
-        bytes_rx, client_address = server_socket.recvfrom(1024)
+    while answers_received < len(client_scores) and not game_ended:
+        print(f"Esperando respuestas para la pregunta ...")
+        try:
+            bytes_rx, client_address = server_socket.recvfrom(1024)
+        except:
+            print("Un cliente ha sido desconectado.")
+            return
         answer, client_id = pickle.loads(bytes_rx)
         correct_answer = questions[current_question]['respuesta_correcta']
         if answer == correct_answer:
@@ -45,9 +53,14 @@ def receive_answers():
     send_question_to_all()
 
 def end_game():
+    global game_ended
+    game_ended = True
     final_scores = "Resultados del juego: \n" + "\n".join([f"Cliente {addr}: {data['score']} puntos" for addr, data in client_scores.items()])
     for client_address in client_scores.keys():
-        server_socket.sendto(pickle.dumps(final_scores), client_scores[client_address]['address'])
+        try:
+            server_socket.sendto(pickle.dumps(final_scores), client_scores[client_address]['address'])
+        except:
+            continue
     print("Juego terminado.")
     server_socket.close()
 
