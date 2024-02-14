@@ -22,6 +22,9 @@ client_id = input("Ingrese su identificador de jugador (por ejemplo, Cliente1): 
 def send_answer(answer):
     message = (answer, client_id)
     client_socket.sendto(pickle.dumps(message), server_address)
+    
+    data, _ = client_socket.recvfrom(1024)
+    print(pickle.loads(data))
 
 # Conectarse al servidor
 client_socket.sendto(pickle.dumps(f"Hola servidor, soy {client_id}"), server_address)

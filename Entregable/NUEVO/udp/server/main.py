@@ -46,6 +46,10 @@ def receive_answers():
         correct_answer = questions[current_question]['respuesta_correcta']
         if answer == correct_answer:
             client_scores[client_address]['score'] += 1
+            # Enviar respuesta al cliente
+            server_socket.sendto(pickle.dumps(f"Respuesta correcta, {client_scores[client_address]['score']} puntos"), client_address)
+        else:
+            server_socket.sendto(pickle.dumps(f"Respuesta incorrecta, {client_scores[client_address]['score']} puntos"), client_address)
         print(f"Respuesta recibida de {client_id}: {answer}, Puntuación actual: {client_scores[client_address]['score']}")
         answers_received += 1
     
